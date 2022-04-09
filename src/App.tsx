@@ -15,7 +15,6 @@ function App() {
 
       if (provider) {
         // @ts-ignore
-        provider.request({method: "eth_requestAccounts"})
         setWeb3Api({
           // @ts-ignore
           web3: new Web3(provider),
@@ -26,24 +25,24 @@ function App() {
         console.error("Please, install Metamask.")
       }
     };
-
     loadProvider();
   }, []);
 
-  useEffect(() => {
-    const getAccount = async () => {
-      // @ts-ignore
-      const accounts = await web3Api.web3.eth.getAccounts()
-      setAccount(accounts[0])
-    }
-
-    web3Api.web3 && getAccount()
+  const getAccount = useCallback(async() => {
+    // @ts-ignore
+    const accounts = await web3Api.web3.eth.getAccounts();
+    setAccount(accounts[0]);
   }, [web3Api.web3])
 
-  const handleConnectWallet = useCallback(() => {
+  useEffect(() => {
+    web3Api.web3 && getAccount()
+  }, [web3Api.web3, getAccount])
+
+  const handleConnectWallet = useCallback(async() => {
     // @ts-ignore
-    web3Api.provider.request({method: "eth_requestAccounts"});
-  }, [])
+    await web3Api.provider.request({method: "eth_requestAccounts"});
+    getAccount();
+  }, [getAccount, web3Api.provider])
 
   return (
     <div 
