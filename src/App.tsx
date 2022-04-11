@@ -1,25 +1,27 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider'
+import { loadContract } from "./utils/load-contract";
 
 function App() {
-  const [web3Api, setWeb3Api] = useState({
+  const [web3Api, setWeb3Api] = useState<any>({
     web3: null,
     provider: null,
+    contract: null,
   });
   const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState(null);
 
   useEffect(() => {
     const loadProvider = async () => {
-      const provider = await detectEthereumProvider()
+      const provider: any = await detectEthereumProvider();
+      const contract = await loadContract("Faucet", provider);
 
       if (provider) {
-        // @ts-ignore
         setWeb3Api({
-          // @ts-ignore
           web3: new Web3(provider),
-          // @ts-ignore
-          provider
+          provider,
+          contract
         })
       } else {
         console.error("Please, install Metamask.")
@@ -29,7 +31,6 @@ function App() {
   }, []);
 
   const getAccount = useCallback(async() => {
-    // @ts-ignore
     const accounts = await web3Api.web3.eth.getAccounts();
     setAccount(accounts[0]);
   }, [web3Api.web3])
@@ -38,8 +39,17 @@ function App() {
     web3Api.web3 && getAccount()
   }, [web3Api.web3, getAccount])
 
+  useEffect(() => {
+    const loadBalance = async () => {
+      const { contract, web3 } = web3Api
+      const balance = await web3.eth.getBalance(contract.address)
+      setBalance(web3.utils.fromWei(balance, "ether"))
+    }
+
+    web3Api.contract && loadBalance()
+  }, [web3Api])
+
   const handleConnectWallet = useCallback(async() => {
-    // @ts-ignore
     await web3Api.provider.request({method: "eth_requestAccounts"});
     getAccount();
   }, [getAccount, web3Api.provider])
@@ -72,7 +82,7 @@ function App() {
           }
         </div>
         <div className="balance-view is-size-2 my-4">
-          Current balance: <strong> 2 </strong> ETH
+          Current balance: <strong> {balance} </strong> ETH
         </div>
         <button className="button is-link mr-2 is-light">
           Donate
