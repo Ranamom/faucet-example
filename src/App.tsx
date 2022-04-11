@@ -11,6 +11,10 @@ function App() {
   });
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(null);
+  const [shouldReload, reload] = useState(false)
+
+  //const reloadEffect = () => reload(!shouldReload);
+  const reloadEffect = useCallback(() => reload(!shouldReload), [shouldReload]);
 
   useEffect(() => {
     const loadProvider = async () => {
@@ -47,12 +51,22 @@ function App() {
     }
 
     web3Api.contract && loadBalance()
-  }, [web3Api])
+    reload(false);
+  }, [web3Api, shouldReload])
 
   const handleConnectWallet = useCallback(async() => {
     await web3Api.provider.request({method: "eth_requestAccounts"});
     getAccount();
   }, [getAccount, web3Api.provider])
+
+  const addFunds = useCallback(async () => {
+    const { contract, web3 } = web3Api
+    await contract.addFunds({
+      from: account,
+      value: web3.utils.toWei("1", "ether")
+    })
+    reloadEffect()
+  }, [web3Api, account, reloadEffect]);
 
   return (
     <div 
@@ -84,8 +98,8 @@ function App() {
         <div className="balance-view is-size-2 my-4">
           Current balance: <strong> {balance} </strong> ETH
         </div>
-        <button className="button is-link mr-2 is-light">
-          Donate
+        <button className="button is-link mr-2 is-light" onClick={() => {addFunds()}}>
+          Donate 1eth
         </button>
         <button className="button is-primary is-light">
           Withdraw
